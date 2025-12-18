@@ -35,9 +35,14 @@ if (missingVars.length > 0) {
   console.warn('   API endpoints will fail until these are set.');
 }
 
+// Health check - MUST be first and respond immediately
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', service: 'pumex-rag-api' });
+});
+
 // Root endpoint (for Railway health checks)
 app.get('/', (req, res) => {
-  res.json({ 
+  res.status(200).json({ 
     status: 'ok', 
     service: 'pumex-rag-api',
     endpoints: {
@@ -46,11 +51,6 @@ app.get('/', (req, res) => {
       openapi: '/openapi.yaml'
     }
   });
-});
-
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', service: 'pumex-rag-api' });
 });
 
 // Serve OpenAPI schema for ChatGPT
