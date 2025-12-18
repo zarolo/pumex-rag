@@ -176,4 +176,7 @@ Examples:
   }
 }
 
-main();
+// Only run CLI if this file is executed directly (not imported)
+if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith('query.js')) {
+  main();
+}
