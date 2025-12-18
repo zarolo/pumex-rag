@@ -6,12 +6,21 @@ info:
 servers:
   - url: https://pumex-rag-production.up.railway.app
     description: Production server
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: API key for authentication
 paths:
   /api/query:
     post:
       operationId: queryKnowledgeBase
       summary: Search the Pumex knowledge base
       description: Performs semantic search across the Pumex knowledge base. Returns relevant document chunks ranked by truth status (canonical > current > context > archive). Drafts are excluded by default unless explicitly requested.
+      security:
+        - ApiKeyAuth: []
       requestBody:
         required: true
         content:

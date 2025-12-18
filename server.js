@@ -26,6 +26,19 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// API Key authentication middleware (optional - only if API_KEY is set)
+const API_KEY = process.env.API_KEY;
+if (API_KEY) {
+  app.use('/api', (req, res, next) => {
+    const providedKey = req.headers['x-api-key'] || req.headers['authorization']?.replace('Bearer ', '');
+    if (providedKey === API_KEY) {
+      next();
+    } else {
+      res.status(401).json({ error: 'Unauthorized - Invalid API key' });
+    }
+  });
+}
+
 // Validate environment variables on startup (but don't crash)
 const requiredEnvVars = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'OPENAI_API_KEY'];
 const missingVars = requiredEnvVars.filter(v => !process.env[v]);
