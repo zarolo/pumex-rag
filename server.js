@@ -106,13 +106,19 @@ app.post('/api/query', async (req, res) => {
 });
 
 // Start server
+console.log(`📋 Starting server...`);
+console.log(`   PORT env var: ${process.env.PORT || 'not set (using default 3000)'}`);
+console.log(`   Will listen on: ${PORT}`);
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 PUMEX RAG API running on port ${PORT}`);
   console.log(`   Health: /health`);
   console.log(`   Query:  POST /api/query`);
   console.log(`   OpenAPI: /openapi.yaml`);
+  console.log(`   Server is ready and listening on 0.0.0.0:${PORT}`);
 }).on('error', (err) => {
   console.error('❌ Server failed to start:', err);
+  console.error('   Attempted port:', PORT);
   process.exit(1);
 });
 
