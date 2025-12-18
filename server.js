@@ -93,9 +93,23 @@ app.post('/api/query', async (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`🚀 PUMEX RAG API running on http://localhost:${PORT}`);
-  console.log(`   Health: http://localhost:${PORT}/health`);
-  console.log(`   Query:  POST http://localhost:${PORT}/api/query`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 PUMEX RAG API running on port ${PORT}`);
+  console.log(`   Health: /health`);
+  console.log(`   Query:  POST /api/query`);
+  console.log(`   OpenAPI: /openapi.yaml`);
+}).on('error', (err) => {
+  console.error('❌ Server failed to start:', err);
+  process.exit(1);
+});
+
+// Handle uncaught errors
+process.on('uncaughtException', (err) => {
+  console.error('❌ Uncaught Exception:', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
