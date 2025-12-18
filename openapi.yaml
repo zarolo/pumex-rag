@@ -1,0 +1,81 @@
+openapi: 3.1.0
+info:
+  title: PUMEX RAG API
+  description: Query the Pumex knowledge base using semantic search
+  version: 1.0.0
+servers:
+  - url: https://YOUR-DEPLOYMENT-URL.com
+    description: Production server (replace with your actual URL)
+paths:
+  /api/query:
+    post:
+      operationId: queryKnowledgeBase
+      summary: Search the Pumex knowledge base
+      description: |
+        Performs semantic search across the Pumex knowledge base.
+        Returns relevant document chunks ranked by truth status (canonical > current > context > archive).
+        Drafts are excluded by default unless explicitly requested.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - question
+              properties:
+                question:
+                  type: string
+                  description: The user's question or search query
+                  example: "What is vePUMX and how does voting work?"
+                limit:
+                  type: integer
+                  description: Maximum number of results to return (default: 5, max: 20)
+                  default: 5
+                  minimum: 1
+                  maximum: 20
+                include_drafts:
+                  type: boolean
+                  description: Include documents from drafts folder (default: false)
+                  default: false
+      responses:
+        '200':
+          description: Successful query
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  question:
+                    type: string
+                  count:
+                    type: integer
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        title:
+                          type: string
+                          description: Document title
+                        path:
+                          type: string
+                          description: File path
+                        status:
+                          type: string
+                          enum: [canonical, current, context, archive, drafts]
+                          description: Truth status of the document
+                        content:
+                          type: string
+                          description: The relevant content chunk
+                        similarity:
+                          type: number
+                          description: Similarity score (0-1)
+                        weighted_score:
+                          type: number
+                          description: Weighted score considering truth status
+        '400':
+          description: Bad request (missing or invalid question)
+        '500':
+          description: Server error
+
