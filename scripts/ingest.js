@@ -153,8 +153,14 @@ export function chunkDocument(content, filename) {
  * Generates embeddings for an array of text chunks.
  * Uses OpenAI's text-embedding-3-small model.
  */
-export async function generateEmbeddings(chunks) {
+export async function generateEmbeddings(chunks, apiKey = null) {
   const embeddings = [];
+  
+  // Use provided API key or fall back to env var
+  const { default: OpenAI } = await import('openai');
+  const openaiClient = apiKey 
+    ? new OpenAI({ apiKey })
+    : new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   
   // Process in batches of 20 to avoid rate limits
   const batchSize = 20;
@@ -162,7 +168,7 @@ export async function generateEmbeddings(chunks) {
   for (let i = 0; i < chunks.length; i += batchSize) {
     const batch = chunks.slice(i, i + batchSize);
     
-    const response = await openai.embeddings.create({
+    const response = await openaiClient.embeddings.create({
       model: 'text-embedding-3-small',
       input: batch
     });

@@ -178,7 +178,7 @@ app.post('/api/learn', async (req, res) => {
     const chunks = chunkDocument(content, `${title}.md`);
     
     // Generate embeddings
-    const embeddings = await generateEmbeddings(chunks);
+    const embeddings = await generateEmbeddings(chunks, process.env.OPENAI_API_KEY);
     
     // Save to documents table with 'learned' status
     const filename = `[LEARNED] ${title}.md`;
