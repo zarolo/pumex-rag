@@ -26,6 +26,15 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// Validate environment variables on startup (but don't crash)
+const requiredEnvVars = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'OPENAI_API_KEY'];
+const missingVars = requiredEnvVars.filter(v => !process.env[v]);
+
+if (missingVars.length > 0) {
+  console.warn('⚠️  Warning: Missing environment variables:', missingVars.join(', '));
+  console.warn('   API endpoints will fail until these are set.');
+}
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'pumex-rag-api' });

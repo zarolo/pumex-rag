@@ -24,21 +24,24 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 // ============================================
-// Validation
+// Initialize clients (lazy - only when needed)
 // ============================================
 
-if (!SUPABASE_URL || !SUPABASE_KEY || !OPENAI_API_KEY) {
-  console.error('❌ Missing environment variables.');
-  console.error('Required: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, OPENAI_API_KEY');
-  process.exit(1);
+let supabase = null;
+let openai = null;
+
+function getClients() {
+  if (!SUPABASE_URL || !SUPABASE_KEY || !OPENAI_API_KEY) {
+    throw new Error('Missing environment variables: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, OPENAI_API_KEY');
+  }
+  
+  if (!supabase || !openai) {
+    supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    openai = new OpenAI({ apiKey: OPENAI_API_KEY });
+  }
+  
+  return { supabase, openai };
 }
-
-// ============================================
-// Initialize clients
-// ============================================
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
 // ============================================
 // Query Function
@@ -56,8 +59,11 @@ const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 export async function queryRAG(question, options = {}) {
   const { limit = 5, includeDrafts = false } = options;
   
+  // Get clients (validates env vars on first call)
+  const { supabase: supabaseClient, openai: openaiClient } = getClients();
+  
   // 1. Generate embedding for the question
-  const embeddingResponse = await openai.embeddings.create({
+  const embeddingResponse = await openaiClient.embeddings.create({
     model: 'text-embedding-3-small',
     input: question
   });
@@ -65,7 +71,7 @@ export async function queryRAG(question, options = {}) {
   const queryEmbedding = embeddingResponse.data[0].embedding;
   
   // 2. Call the Supabase function for weighted similarity search
-  const { data, error } = await supabase.rpc('match_chunks', {
+  const { data, error } = await supabaseClient.rpc('match_chunks', {
     query_embedding: queryEmbedding,
     match_count: limit,
     include_drafts: includeDrafts
