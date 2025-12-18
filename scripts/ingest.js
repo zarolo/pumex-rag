@@ -299,7 +299,7 @@ async function main() {
         const chunks = chunkDocument(content, filename);
         
         // Generate embeddings
-        const embeddings = await generateEmbeddings(chunks);
+        const embeddings = await generateEmbeddings(chunks, OPENAI_API_KEY);
         
         // Upsert to Supabase
         const result = await upsertDocument(filePath, folder, content, chunks, embeddings);
