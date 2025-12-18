@@ -35,6 +35,19 @@ if (missingVars.length > 0) {
   console.warn('   API endpoints will fail until these are set.');
 }
 
+// Root endpoint (for Railway health checks)
+app.get('/', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    service: 'pumex-rag-api',
+    endpoints: {
+      health: '/health',
+      query: 'POST /api/query',
+      openapi: '/openapi.yaml'
+    }
+  });
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'pumex-rag-api' });
