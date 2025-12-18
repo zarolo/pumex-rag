@@ -13,7 +13,7 @@ import cors from 'cors';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { queryRAG } from './scripts/query.js';
+import { queryRAG, getLastQueryEmbedding } from './scripts/query.js';
 import 'dotenv/config';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -79,6 +79,9 @@ app.get('/openapi.yaml', (req, res) => {
 
 // Query endpoint for ChatGPT Custom GPT
 app.post('/api/query', async (req, res) => {
+  const startTime = Date.now();
+  let questionEmbedding = null;
+  
   try {
     const { question, limit = 5, include_drafts = false } = req.body;
     
@@ -103,6 +106,21 @@ app.post('/api/query', async (req, res) => {
       weighted_score: Math.round(r.weighted_score * 100) / 100
     }));
     
+    const responseTime = Date.now() - startTime;
+    const topResult = results[0];
+    questionEmbedding = getLastQueryEmbedding();
+    
+    // Log query (async, don't block response)
+    logQuery(question, questionEmbedding, {
+      resultsCount: formatted.length,
+      topSimilarity: topResult?.similarity,
+      topWeightedScore: topResult?.weighted_score,
+      includeDrafts: include_drafts === true || include_drafts === 'true',
+      responseTime,
+      userIp: req.ip || req.headers['x-forwarded-for'],
+      apiKeyId: req.headers['x-api-key'] ? 'provided' : null
+    }).catch(err => console.error('Failed to log query:', err));
+    
     res.json({
       question,
       results: formatted,
@@ -117,6 +135,36 @@ app.post('/api/query', async (req, res) => {
     });
   }
 });
+
+// Query logging function (non-blocking)
+async function logQuery(question, embedding, metadata) {
+  if (process.env.DISABLE_QUERY_LOGGING === 'true') {
+    return; // Allow disabling for testing
+  }
+  
+  try {
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+    
+    await supabase.from('query_logs').insert({
+      question,
+      question_embedding: embedding,
+      results_count: metadata.resultsCount,
+      top_similarity: metadata.topSimilarity,
+      top_weighted_score: metadata.topWeightedScore,
+      include_drafts: metadata.includeDrafts,
+      response_time_ms: metadata.responseTime,
+      user_ip: metadata.userIp,
+      api_key_id: metadata.apiKeyId
+    });
+  } catch (err) {
+    // Fail silently - logging shouldn't break the API
+    console.error('Query logging error:', err.message);
+  }
+}
 
 // Start server
 console.log(`📋 Starting server...`);

@@ -56,6 +56,9 @@ function getClients() {
  * @param {boolean} options.includeDrafts - Include drafts folder (default: false)
  * @returns {Promise<Array>} - Array of matching document chunks with scores
  */
+// Store embedding for logging (if needed)
+let lastQueryEmbedding = null;
+
 export async function queryRAG(question, options = {}) {
   const { limit = 5, includeDrafts = false } = options;
   
@@ -69,6 +72,7 @@ export async function queryRAG(question, options = {}) {
   });
   
   const queryEmbedding = embeddingResponse.data[0].embedding;
+  lastQueryEmbedding = queryEmbedding; // Store for potential logging
   
   // 2. Call the Supabase function for weighted similarity search
   const { data, error } = await supabaseClient.rpc('match_chunks', {
@@ -82,6 +86,11 @@ export async function queryRAG(question, options = {}) {
   }
   
   return data;
+}
+
+// Export embedding getter for logging
+export function getLastQueryEmbedding() {
+  return lastQueryEmbedding;
 }
 
 /**
