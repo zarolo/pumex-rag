@@ -4,8 +4,8 @@ info:
   description: Query the Pumex knowledge base using semantic search
   version: 1.0.0
 servers:
-  - url: https://YOUR-DEPLOYMENT-URL.com
-    description: Production server (replace with your actual URL)
+  - url: https://pumex-rag-production.up.railway.app
+    description: Production server
 paths:
   /api/query:
     post:
