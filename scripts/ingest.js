@@ -93,7 +93,7 @@ function folderToStatus(folder) {
  * Intelligently chunks a markdown document.
  * Splits on headers, then paragraphs, maintaining context.
  */
-function chunkDocument(content, filename) {
+export function chunkDocument(content, filename) {
   const chunks = [];
   
   // Clean content: normalize line endings, trim
@@ -153,7 +153,7 @@ function chunkDocument(content, filename) {
  * Generates embeddings for an array of text chunks.
  * Uses OpenAI's text-embedding-3-small model.
  */
-async function generateEmbeddings(chunks) {
+export async function generateEmbeddings(chunks) {
   const embeddings = [];
   
   // Process in batches of 20 to avoid rate limits

@@ -136,6 +136,86 @@ app.post('/api/query', async (req, res) => {
   }
 });
 
+// Learn endpoint - Save knowledge from ChatGPT conversations
+app.post('/api/learn', async (req, res) => {
+  try {
+    const { title, content, source_question, source_conversation } = req.body;
+    
+    if (!title || !content) {
+      return res.status(400).json({
+        error: 'Missing required fields: title and content'
+      });
+    }
+    
+    // Save to learned_knowledge table
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+    
+    // Insert into learned_knowledge
+    const { data: learned, error: learnedError } = await supabase
+      .from('learned_knowledge')
+      .insert({
+        title,
+        content,
+        source_question,
+        source_conversation,
+        created_by: 'chatgpt'
+      })
+      .select('id')
+      .single();
+    
+    if (learnedError) {
+      throw new Error(`Failed to save learned knowledge: ${learnedError.message}`);
+    }
+    
+    // Process and embed the content (chunk it, generate embeddings, save to documents)
+    const { chunkDocument, generateEmbeddings } = await import('./scripts/ingest.js');
+    
+    // Chunk the content
+    const chunks = chunkDocument(content, `${title}.md`);
+    
+    // Generate embeddings
+    const embeddings = await generateEmbeddings(chunks);
+    
+    // Save to documents table with 'learned' status
+    const filename = `[LEARNED] ${title}.md`;
+    const documentRecords = chunks.map((chunkContent, index) => ({
+      content: chunkContent,
+      embedding: embeddings[index],
+      filename,
+      folder: 'learned',
+      truth_status: 'learned',
+      chunk_index: index
+    }));
+    
+    const { error: docError } = await supabase
+      .from('documents')
+      .insert(documentRecords);
+    
+    if (docError) {
+      console.error('Failed to save to documents:', docError);
+      // Still return success for learned_knowledge
+    }
+    
+    res.json({
+      success: true,
+      learned_id: learned.id,
+      chunks_saved: chunks.length,
+      message: 'Knowledge saved successfully'
+    });
+    
+  } catch (error) {
+    console.error('Learn error:', error);
+    res.status(500).json({
+      error: 'Failed to save knowledge',
+      message: error.message
+    });
+  }
+});
+
 // Query logging function (non-blocking)
 async function logQuery(question, embedding, metadata) {
   if (process.env.DISABLE_QUERY_LOGGING === 'true') {
